@@ -11,7 +11,7 @@ package edu.eci.arsw.primefinder;
 public class Control extends Thread {
     
     private final static int NTHREADS = 3;
-    private final static int MAXVALUE = 30000000;
+    private final static int MAXVALUE = 3000;
     private final static int TMILISECONDS = 5000;
 
     private final int NDATA = MAXVALUE / NTHREADS;
@@ -24,7 +24,7 @@ public class Control extends Thread {
 
         int i;
         for(i = 0;i < NTHREADS - 1; i++) {
-            PrimeFinderThread elem = new PrimeFinderThread(i*NDATA, (i+1)*NDATA);
+            PrimeFinderThread elem = new PrimeFinderThread(i*NDATA, (i+1)*NDATA); // 0 - 10.000.000
             pft[i] = elem;
         }
         pft[i] = new PrimeFinderThread(i*NDATA, MAXVALUE + 1);
@@ -39,6 +39,38 @@ public class Control extends Thread {
         for(int i = 0;i < NTHREADS;i++ ) {
             pft[i].start();
         }
+
+        /* 
+        for(int i = 0;i < NTHREADS;i++ ) {
+            try {
+                pft[i].join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        */
+
+    }
+
+    public static int getTmiliseconds() {
+        return TMILISECONDS;
     }
     
+    public synchronized void stopThreads(){
+        synchronized(pft){
+            for(int i = 0;i < NTHREADS;i++ ) {
+                pft[i].interrupt();
+            }
+        };
+    }
+
+    public synchronized void resumeThreads(){
+        synchronized(pft){
+            pft.notifyAll();
+        }
+    }
+
+    public void printNumPrimes(){
+        System.out.println(pft[0].getPrimes().size());
+    }
 }
