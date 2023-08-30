@@ -2,12 +2,18 @@ package edu.eci.arsw.primefinder;
 
 import java.util.LinkedList;
 import java.util.List;
+//import java.util.concurrent.ConcurrentLinkedQueue;
+//import java.util.concurrent.CopyOnWriteArrayList;
 
 public class PrimeFinderThread extends Thread{
 
 	
 	int a,b;
 	
+    //public CopyOnWriteArrayList<Integer> primesA;
+
+    //public ConcurrentLinkedQueue<Integer> primesB;
+
 	private List<Integer> primes;
 	
 	public PrimeFinderThread(int a, int b) {
@@ -17,14 +23,14 @@ public class PrimeFinderThread extends Thread{
 		this.b = b;
 	}
 
-        @Override
+    @Override
 	public void run(){
-            for (int i= a;i < b;i++){						
-                if (isPrime(i)){
-                    primes.add(i);
-                    System.out.println(i);
-                }
+        for (int i= a;i < b;i++){						
+            if (isPrime(i)){
+                addToList(i);
+                //System.out.println(i);
             }
+        }
 	}
 	
 	boolean isPrime(int n) {
@@ -43,5 +49,8 @@ public class PrimeFinderThread extends Thread{
 	public List<Integer> getPrimes() {
 		return primes;
 	}
-	
+
+    private synchronized void addToList(int prime){
+        primes.add(prime);
+    }	
 }
