@@ -3,15 +3,16 @@ package snakepackage;
 import java.awt.Dimension;
 import java.awt.Toolkit;
 
-import javax.swing.JFrame;
+import javax.swing.*;
 
 import enums.GridSize;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.JButton;
-import javax.swing.JPanel;
 
 /**
  * @author jd-
@@ -33,7 +34,7 @@ public class SnakeApp {
         new Cell((GridSize.GRID_WIDTH / 2) / 2, 1),
         new Cell(3 * (GridSize.GRID_WIDTH / 2) / 2,
         GridSize.GRID_HEIGHT - 2)};
-    private JFrame frame;
+    private static JFrame frame;
     private static Board board;
     int nr_selected = 0;
     Thread[] thread = new Thread[MAX_THREADS];
@@ -41,6 +42,12 @@ public class SnakeApp {
     public SnakeApp() {
         Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
         frame = new JFrame("The Snake Race");
+        //Cambios
+        JButton startButton = new JButton("START");
+        JButton pauseButton = new JButton("PAUSE");
+        JButton resumeButton = new JButton("RESUME");
+        actionListenerBuilder(startButton,pauseButton,resumeButton);
+        //
         frame.setLayout(new BorderLayout());
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         // frame.setSize(618, 640);
@@ -55,7 +62,9 @@ public class SnakeApp {
         
         JPanel actionsBPabel=new JPanel();
         actionsBPabel.setLayout(new FlowLayout());
-        actionsBPabel.add(new JButton("Action "));
+        actionsBPabel.add(startButton);
+        actionsBPabel.add(pauseButton);
+        actionsBPabel.add(resumeButton);
         frame.add(actionsBPabel,BorderLayout.SOUTH);
 
     }
@@ -105,4 +114,46 @@ public class SnakeApp {
         return app;
     }
 
+    /**
+     * Aqui se generan los action Listeners de los botones
+     * @param b1 Start
+     * @param b2 Pause
+     * @param b3 Resume
+     */
+    public static void actionListenerBuilder(JButton b1, JButton b2, JButton b3){
+        //Pause Button
+        b2.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //TODO
+                 HashMap<Integer,Integer> result = findMoreLargeSnake();
+                 int clave = result.keySet().iterator().next();
+                 String message = "Largest snake" + clave + "Size" + result.get(clave);
+                 int option = JOptionPane.showOptionDialog(frame,message,"Serpiente mas larga",JOptionPane.DEFAULT_OPTION,JOptionPane.INFORMATION_MESSAGE,null,new String[]{"Volver al juego"},"Back to the Game");
+                 // option  0 es volver al juego
+            }
+        });
+    }
+
+    /**
+     * This will check the largest and the
+     * @return
+     */
+    public static HashMap<Integer,Integer> findMoreLargeSnake(){
+        HashMap<Integer,Integer> tuple = new HashMap<>();
+        int sizeOfLongest = -7;
+        int idtOfLongest = 0;
+        int operation = 0;
+        for (Snake snake : app.snakes) {
+            if (!snake.isSnakeEnd()) {
+                operation = snake.getGrowing() - snake.getINIT_SIZE();
+                if (operation > sizeOfLongest) {
+                    sizeOfLongest = operation;
+                    idtOfLongest = snake.getIdt();
+                }
+            }
+        }
+        tuple.put(idtOfLongest,sizeOfLongest);
+        return tuple;
+    }
 }

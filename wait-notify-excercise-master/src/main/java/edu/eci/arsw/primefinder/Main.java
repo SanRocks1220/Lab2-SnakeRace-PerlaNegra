@@ -9,7 +9,7 @@ public class Main {
         
         control.start();
 
-        int time = Control.getTmiliseconds();
+/*        int time = Control.getTmiliseconds();
 
         Scanner line = new Scanner(System.in);
         String enter = "";
@@ -30,7 +30,7 @@ public class Main {
             }
         }
 
-        line.close();
+        line.close();*/
     }
 	
 }

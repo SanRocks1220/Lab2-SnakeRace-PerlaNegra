@@ -9,6 +9,8 @@ public class PrimeFinderThread extends Thread{
 
 	
 	int a,b;
+    public boolean paused = false;
+    public final Object pausedLock = new Object();
 	
     //public CopyOnWriteArrayList<Integer> primesA;
 
@@ -23,16 +25,34 @@ public class PrimeFinderThread extends Thread{
 		this.b = b;
 	}
 
+    public void pauseThread(){
+        paused = true;
+    }
+
     @Override
 	public void run(){
-        for (int i= a;i < b;i++){						
+        for (int i= a;i < b;i++){
+            synchronized (pausedLock){
+                while (paused){
+                    try{
+                        pausedLock.wait();
+                    }catch (InterruptedException e){
+                        e.printStackTrace();
+                    }
+                }
+            }
             if (isPrime(i)){
                 addToList(i);
                 //System.out.println(i);
             }
         }
 	}
-	
+    public void resumeThread() {
+        synchronized (pausedLock) {
+            paused = false;
+            pausedLock.notifyAll();
+        }
+    }
 	boolean isPrime(int n) {
 	    boolean ans;
             if (n > 2) { 

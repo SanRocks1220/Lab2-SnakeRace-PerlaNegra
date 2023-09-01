@@ -184,6 +184,14 @@ public class Snake extends Observable implements Runnable {
         }
     }
 
+    public int getGrowing() {
+        return growing;
+    }
+
+    public int getINIT_SIZE() {
+        return INIT_SIZE;
+    }
+
     private void checkIfFood(Cell newCell) {
         Random random = new Random();
 

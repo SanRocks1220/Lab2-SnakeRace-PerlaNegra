@@ -5,16 +5,21 @@
  */
 package edu.eci.arsw.primefinder;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 /**
  *
  */
 public class Control extends Thread {
     
-    private final static int NTHREADS = 3;
-    private final static int MAXVALUE = 3000;
+    private final static int NTHREADS = 4;
+    private final static int MAXVALUE = 30000000;
     private final static int TMILISECONDS = 5000;
 
     private final int NDATA = MAXVALUE / NTHREADS;
+
 
     private PrimeFinderThread pft[];
     
@@ -39,6 +44,26 @@ public class Control extends Thread {
         for(int i = 0;i < NTHREADS;i++ ) {
             pft[i].start();
         }
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+        executor.scheduleAtFixedRate(this::pauseThreads, TMILISECONDS, TMILISECONDS, TimeUnit.MILLISECONDS);
+
+        ScheduledExecutorService printExecutor = Executors.newScheduledThreadPool(1);
+        printExecutor.scheduleAtFixedRate(this::printNumPrimes, TMILISECONDS, TMILISECONDS, TimeUnit.MILLISECONDS);
+
+        for (int i = 0; i < NTHREADS; i++) {
+            try {
+                pft[i].join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        executor.shutdown();
+        try {
+            executor.awaitTermination(1, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
 
         /* 
         for(int i = 0;i < NTHREADS;i++ ) {
@@ -59,17 +84,27 @@ public class Control extends Thread {
     public synchronized void stopThreads(){
         synchronized(pft){
             for(int i = 0;i < NTHREADS;i++ ) {
-                pft[i].interrupt();
+                try {
+                    pft[i].wait();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
         };
     }
 
-    public synchronized void resumeThreads(){
-        synchronized(pft){
-            pft.notifyAll();
+    private void resumeThreads() {
+        // Reanudar los threads
+        for (PrimeFinderThread thread : pft) {
+            thread.resumeThread();
         }
     }
-
+    private void pauseThreads() {
+        // Pausar los threads
+        for (PrimeFinderThread thread : pft) {
+            thread.pauseThread();
+        }
+    }
     public void printNumPrimes(){
         System.out.println(pft[0].getPrimes().size());
     }
