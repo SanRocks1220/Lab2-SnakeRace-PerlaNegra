@@ -22,16 +22,45 @@ public class Snake extends Observable implements Runnable {
     private final int INIT_SIZE = 3;
 
     private boolean hasTurbo = false;
+
+    private boolean stopped = false;
     private int jumps = 0;
     private boolean isSelected = false;
     private int growing = 0;
     public boolean goal = false;
+    private int size;
+    private boolean isRunning = true;
+    private Object lock;
 
-    public Snake(int idt, Cell head, int direction) {
+    private boolean paused = false;
+
+
+    public Snake(int idt, Cell head, int direction, Object lock) {
         this.idt = idt;
         this.direction = direction;
+        this.isRunning = false;
+        this.lock = lock;
         generateSnake(head);
 
+    }
+
+    public boolean isStopped() {
+        return stopped;
+    }
+
+    public void stopSnake() {
+        stopped = true;
+    }
+
+    public void pauseSnake() {
+        stopped = true;
+    }
+
+    public void resumeSnake() {
+        stopped = false;
+        synchronized (lock) {
+            lock.notify();
+        }
     }
 
     public boolean isSnakeEnd() {
@@ -43,33 +72,43 @@ public class Snake extends Observable implements Runnable {
         //Board.gameboard[head.getX()][head.getY()].reserveCell(jumps, idt);
         snakeBody.add(head);
         growing = INIT_SIZE - 1;
+        size = INIT_SIZE;
     }
 
     @Override
     public void run() {
         while (!snakeEnd) {
-            
-            snakeCalc();
+            if(!stopped) {
+                snakeCalc();
 
-            //NOTIFY CHANGES TO GUI
-            setChanged();
-            notifyObservers();
+                //NOTIFY CHANGES TO GUI
+                setChanged();
+                notifyObservers();
 
-            try {
-                if (hasTurbo == true) {
-                    Thread.sleep(500 / 3);
-                } else {
-                    Thread.sleep(500);
+                try {
+                    if (hasTurbo == true) {
+                        Thread.sleep(500 / 3);
+                    } else {
+                        Thread.sleep(500);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            }else {
+                synchronized (lock) {
+                    try {
+                        lock.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
 
         }
-        
+
         fixDirection(head);
         
-        
+
     }
 
     private void snakeCalc() {
@@ -184,12 +223,25 @@ public class Snake extends Observable implements Runnable {
         }
     }
 
+    public int getGrowing() {
+        return growing;
+    }
+
+    public int getINIT_SIZE() {
+        return INIT_SIZE;
+    }
+
+    public int getSize(){
+        return size;
+    }
+
     private void checkIfFood(Cell newCell) {
         Random random = new Random();
 
         if (Board.gameboard[newCell.getX()][newCell.getY()].isFood()) {
             // eat food
             growing += 3;
+            size +=3;
             int x = random.nextInt(GridSize.GRID_HEIGHT);
             int y = random.nextInt(GridSize.GRID_WIDTH);
 

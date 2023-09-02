@@ -1,0 +1,41 @@
+Introducción:
+Este informe se detalla las actividades del laboratorio de arquitectura de software, donde se exploraron los conceptos relacionados con el uso en profundidad de la teoría de hilos y su funcionamiento en la programación.
+
+
+Desarrollo del taller:
+De acuerdo con La lógica del juego, identificamos y escribimos:
+Q: Posibles condiciones de carrera.
+R: 
+•	La variable "snakeEnd" se utiliza para determinar si una serpiente ha muerto. Varios hilos (serpientes) pueden acceder y modificar esta variable sin una sincronización adecuada, lo que podría dar lugar a resultados inesperados o errores.
+•	Varias serpientes acceden al tablero de juego para realizar movimientos y verificar colisiones.
+•	El array de serpientes "snakes" se comparte entre varios hilos, y no parece haber una sincronización adecuada al acceder a esta lista.
+
+Q: Uso inadecuado de colecciones, considerando su manejo concurrente (para esto, aumente la velocidad del juego y ejecútelo varias veces hasta que se genere un error).
+R: 
+El error que se genera es: “ConcurrentModificationException” en LinkedLists.checkForComodification, que ocurre cuando se intenta iterar muy rápidamente sobre colección. 
+ 
+Las colecciones que se pueden ver afectadas por problemas de acceso concurrente incluyen principalmente:
+1.	La matriz snakes: La matriz de serpientes ‘snakes’ es un array que almacena objetos de tipo Snake. Varias serpientes acceden y modifican esta matriz desde hilos diferentes sin ninguna sincronización adecuada. Esto puede dar lugar a condiciones de carrera cuando las serpientes se agregan, eliminan o modifican, ya que la matriz no está diseñada para ser segura en un entorno multihilo.
+2.	El tablero de juego gameboard: El tablero de juego ‘gameboard’ es una matriz bidimensional de objetos Cell, que representa el estado del juego. Varias serpientes acceden a las celdas del tablero para realizar movimientos y verificar colisiones. Sin una sincronización adecuada, podría haber condiciones de carrera al acceder a estas celdas.
+ 
+
+Q: Uso innecesario de esperas activas.
+R:
+En la función "init()" se utiliza una espera activa para esperar a que todas las serpientes hayan terminado su juego antes de salir del bucle principal. Esto se hace mediante un bucle infinito que verifica el estado de las serpientes. Este enfoque de espera activa consume recursos de la CPU de manera innecesaria mientras espera la finalización de las serpientes. Sería más eficiente utilizar mecanismos de sincronización, como "join", para esperar a que los hilos de las serpientes finalicen en lugar de ocupar la CPU en un bucle vacío.
+
+Identifique las regiones críticas asociadas a las condiciones de carrera, y haga algo para eliminarlas. Tenga en cuenta que se debe sincronizar estríctamente LO NECESARIO. En su documento de respuestas indique, la solución realizada para cada ítem del punto 2. Igualmente tenga en cuenta que en los siguientes puntos NO se deben agregar más posibles condiciones de carrera.
+
+Para el caso del tablero, la creación e inicialización variaron de forma en que permite manejar concurrencia:
+-> static List<List<Cell>> synchronizedGameBoard = new ArrayList<>();
+Inicializando de la forma:
+-> Cell[][] gameboard = new Cell[GridSize.GRID_WIDTH][GridSize.GRID_HEIGHT];
+-> for (Cell[] fila : gameboard) {
+			List<Cell> row = new ArrayList<>();
+			for (Cell value : row) {
+				row.add(value);
+			}
+			synchronizedGameBoard.add(Collections.synchronizedList(row));
+		}
+
+Para el caso del cuerpo de la serpiente, la creación cambió igualmente para poder manejar concurrencia:
+-> private ConcurrentLinkedDeque<Cell> snakeBody = new ConcurrentLinkedDeque<Cell>();
