@@ -5,6 +5,9 @@ import java.awt.Graphics;
 import java.awt.Image;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.Random;
@@ -28,13 +31,23 @@ public class Board extends JLabel implements Observer {
 	static Cell[] turbo_boosts = new Cell[NR_TURBO_BOOSTS];
 	static int[] result = new int[SnakeApp.MAX_THREADS];
 	Random random = new Random();
-	static Cell[][] gameboard = new Cell[GridSize.GRID_WIDTH][GridSize.GRID_HEIGHT];
+	static List<List<Cell>> synchronizedGameBoard = new ArrayList<>();
 
 	@SuppressWarnings("unused")
 	public Board() {
 		if ((NR_BARRIERS + NR_JUMP_PADS + NR_FOOD + NR_TURBO_BOOSTS) > GridSize.GRID_HEIGHT
 				* GridSize.GRID_WIDTH)
-			throw new IllegalArgumentException(); 
+			throw new IllegalArgumentException();
+
+		Cell[][] gameboard = new Cell[GridSize.GRID_WIDTH][GridSize.GRID_HEIGHT];
+
+		for (Cell[] fila : gameboard) {
+			List<Cell> row = new ArrayList<>();
+			for (Cell value : row) {
+				row.add(value);
+			}
+			synchronizedGameBoard.add(Collections.synchronizedList(row));
+		}
 		GenerateBoard();
 		GenerateFood();
 		GenerateBarriers();
@@ -44,8 +57,8 @@ public class Board extends JLabel implements Observer {
 
 	private void GenerateTurboBoosts() {
 		for (int i = 0; i != NR_TURBO_BOOSTS; i++) {
-			Cell tmp = gameboard[random.nextInt(GridSize.GRID_WIDTH)][random
-					.nextInt(GridSize.GRID_HEIGHT)];
+			Cell tmp = synchronizedGameBoard.get(random.nextInt(GridSize.GRID_WIDTH))
+						.get(random.nextInt(GridSize.GRID_HEIGHT));
 			if (!tmp.hasElements()) {
 				turbo_boosts[i] = tmp;
 				turbo_boosts[i].setTurbo_boost(true);
@@ -57,8 +70,8 @@ public class Board extends JLabel implements Observer {
 
 	private void GenerateJumpPads() {
 		for (int i = 0; i != NR_JUMP_PADS; i++) {
-			Cell tmp = gameboard[random.nextInt(GridSize.GRID_WIDTH)][random
-					.nextInt(GridSize.GRID_HEIGHT)];
+			Cell tmp = synchronizedGameBoard.get(random.nextInt(GridSize.GRID_WIDTH))
+						.get(random.nextInt(GridSize.GRID_HEIGHT));
 			if (!tmp.hasElements()) {
 				jump_pads[i] = tmp;
 				jump_pads[i].setJump_pad(true);
@@ -71,7 +84,7 @@ public class Board extends JLabel implements Observer {
 	private void GenerateBoard() {
 		for (int i = 0; i != GridSize.GRID_WIDTH; i++) {
 			for (int j = 0; j != GridSize.GRID_HEIGHT; j++) {
-				gameboard[i][j] = new Cell(i, j);
+				synchronizedGameBoard.get(i).add(j, new Cell(i, j));
 				//System.out.println(" ins " + gameboard[i][j]);
 			}
 		}
@@ -80,8 +93,8 @@ public class Board extends JLabel implements Observer {
 
 	private void GenerateBarriers() {
 		for (int i = 0; i != NR_BARRIERS; i++) {
-			Cell tmp = gameboard[random.nextInt(GridSize.GRID_WIDTH)][random
-					.nextInt(GridSize.GRID_HEIGHT)];
+			Cell tmp = synchronizedGameBoard.get(random.nextInt(GridSize.GRID_WIDTH))
+						.get(random.nextInt(GridSize.GRID_HEIGHT));
 			if (!tmp.hasElements()) {
 				barriers[i] = tmp;
 				barriers[i].setBarrier(true);
@@ -93,8 +106,8 @@ public class Board extends JLabel implements Observer {
 
 	private void GenerateFood() {
 		for (int i = 0; i != NR_FOOD; i++) {
-			Cell tmp = gameboard[random.nextInt(GridSize.GRID_WIDTH)][random
-					.nextInt(GridSize.GRID_HEIGHT)];
+			Cell tmp = synchronizedGameBoard.get(random.nextInt(GridSize.GRID_WIDTH))
+						.get(random.nextInt(GridSize.GRID_HEIGHT));
 			if (!tmp.hasElements()) {
 				food[i] = tmp;
 				food[i].setFood(true);
