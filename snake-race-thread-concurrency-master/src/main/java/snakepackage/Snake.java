@@ -22,13 +22,18 @@ public class Snake extends Observable implements Runnable {
     private final int INIT_SIZE = 3;
 
     private boolean hasTurbo = false;
+
+    private boolean stopped = false;
     private int jumps = 0;
     private boolean isSelected = false;
     private int growing = 0;
     public boolean goal = false;
     private int size;
-    private boolean isRunning;
+    private boolean isRunning = true;
     private Object lock;
+
+    private boolean paused = false;
+
 
     public Snake(int idt, Cell head, int direction, Object lock) {
         this.idt = idt;
@@ -39,23 +44,27 @@ public class Snake extends Observable implements Runnable {
 
     }
 
+    public boolean isStopped() {
+        return stopped;
+    }
+
+    public void stopSnake() {
+        stopped = true;
+    }
+
+    public void pauseSnake() {
+        stopped = true;
+    }
+
+    public void resumeSnake() {
+        stopped = false;
+        synchronized (lock) {
+            lock.notify();
+        }
+    }
+
     public boolean isSnakeEnd() {
         return snakeEnd;
-    }
-
-    public void setRunning(boolean state) {
-        isRunning  = state;
-    }
-
-    public void pauseThread() {
-        synchronized (lock) {
-            try {
-                lock.wait();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        isRunning = false;
     }
 
     private void generateSnake(Cell head) {
@@ -69,28 +78,37 @@ public class Snake extends Observable implements Runnable {
     @Override
     public void run() {
         while (!snakeEnd) {
-            
-            snakeCalc();
+            if(!stopped) {
+                snakeCalc();
 
-            //NOTIFY CHANGES TO GUI
-            setChanged();
-            notifyObservers();
+                //NOTIFY CHANGES TO GUI
+                setChanged();
+                notifyObservers();
 
-            try {
-                if (hasTurbo == true) {
-                    Thread.sleep(500 / 3);
-                } else {
-                    Thread.sleep(500);
+                try {
+                    if (hasTurbo == true) {
+                        Thread.sleep(500 / 3);
+                    } else {
+                        Thread.sleep(500);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            }else {
+                synchronized (lock) {
+                    try {
+                        lock.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
 
         }
-        
+
         fixDirection(head);
         
-        
+
     }
 
     private void snakeCalc() {
