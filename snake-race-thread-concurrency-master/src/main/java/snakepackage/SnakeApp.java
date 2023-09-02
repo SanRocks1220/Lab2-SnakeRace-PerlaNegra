@@ -37,6 +37,8 @@ public class SnakeApp {
     private static JFrame frame;
     private static Board board;
     private static int worstSnake;
+    private boolean isRunning;
+    private Object lock;
     int nr_selected = 0;
     Thread[] thread = new Thread[MAX_THREADS];
 
@@ -44,10 +46,9 @@ public class SnakeApp {
         Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
         frame = new JFrame("The Snake Race");
         //Cambios
-        JButton startButton = new JButton("START");
         JButton pauseButton = new JButton("PAUSE");
         JButton resumeButton = new JButton("RESUME");
-        actionListenerBuilder(startButton,pauseButton,resumeButton);
+        actionListenerBuilder(pauseButton);
         //
         frame.setLayout(new BorderLayout());
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -63,18 +64,26 @@ public class SnakeApp {
         
         JPanel actionsBPabel=new JPanel();
         actionsBPabel.setLayout(new FlowLayout());
-        actionsBPabel.add(startButton);
         actionsBPabel.add(pauseButton);
-        actionsBPabel.add(resumeButton);
         frame.add(actionsBPabel,BorderLayout.SOUTH);
 
         worstSnake = -1;
 
+        isRunning = false;
+        lock = new Object();
+
     }
+    public static boolean dialogoInicial(){
+        int respuesta = JOptionPane.showConfirmDialog(frame, "¿Deseas iniciar el juego?", "Iniciar Juego", JOptionPane.YES_NO_OPTION);
+        return respuesta == JOptionPane.YES_OPTION;
+    }
+
 
     public static void main(String[] args) {
         app = new SnakeApp();
-        app.init();
+        if (dialogoInicial()) {
+            app.init();
+        }
     }
 
     private void init() {
@@ -83,7 +92,7 @@ public class SnakeApp {
         
         for (int i = 0; i != MAX_THREADS; i++) {
             
-            snakes[i] = new Snake(i + 1, spawn[i], i + 1);
+            snakes[i] = new Snake(i + 1, spawn[i], i + 1, this.lock);
             snakes[i].addObserver(board);
             thread[i] = new Thread(snakes[i]);
             thread[i].start();
@@ -126,19 +135,26 @@ public class SnakeApp {
      * @param b2 Pause
      * @param b3 Resume
      */
-    public static void actionListenerBuilder(JButton start, JButton pause, JButton resume){
-        //Pause Button
+    public static void actionListenerBuilder(JButton pause) {
+        // Pause Button
         pause.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 //TODO
-                 int largestSnake = findLargestSnake();
-                 int size = app.snakes[largestSnake].getGrowing()+1;
-                 String deadSnake = (worstSnake<0)?"No one ends yet":Integer.toString(worstSnake+1);
-                 String message = "- Largest snake: " + largestSnake + ", size: " + size + "\n"
-                                    + "- Worst snake: " + deadSnake;
-                 int option = JOptionPane.showOptionDialog(frame,message,"Serpiente mas larga",JOptionPane.DEFAULT_OPTION,JOptionPane.INFORMATION_MESSAGE,null,new String[]{"Volver al juego"},"Back to the Game");
-                 // option  0 es volver al juego
+                app.stopAllSnakes();
+                int largestSnake = findLargestSnake();
+                int size = app.snakes[largestSnake].getSize();
+                String deadSnake = (worstSnake<0)?"No one ends yet":Integer.toString(worstSnake+1);
+                String message = "- Largest snake: " + (largestSnake+1) + ", size: " + size + "\n"
+                        + "- Worst snake: " + deadSnake;
+                Object[] options = {"Reanudar"};
+                int option = JOptionPane.showOptionDialog(frame, message, "Serpiente mas larga",
+                        JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
+                //int option = JOptionPane.showOptionDialog(frame,message,"Serpiente mas larga",JOptionPane.DEFAULT_OPTION,JOptionPane.INFORMATION_MESSAGE,null,new String[]{"Volver al juego"},"Back to the Game");
+                // option  0 es volver al juego
+                if(option == 0){
+                    app.resumeGame();
+                }
             }
         });
     }
@@ -151,26 +167,31 @@ public class SnakeApp {
         int size = -1;
         int snake = -1;
         for(int i=0; i != MAX_THREADS; i++){
-            if((!app.snakes[i].isSnakeEnd()) && (app.snakes[i].getGrowing()+1 > size)){
-                size = app.snakes[i].getGrowing()+1;
+            if((!app.snakes[i].isSnakeEnd()) && (app.snakes[i].getSize() > size)){
+                size = app.snakes[i].getSize();
                 snake = i;                  //If the snake is larger than the actual parameter, update the parameter(size) and store the snake(i)
             }
         }
         return snake;
-        // HashMap<Integer,Integer> tuple = new HashMap<>();
-        // int sizeOfLongest = -7;
-        // int idtOfLongest = 0;
-        // int operation = 0;
-        // for (Snake snake : app.snakes) {
-        //     if (!snake.isSnakeEnd()) {
-        //         operation = snake.getGrowing() - snake.getINIT_SIZE();
-        //         if (operation > sizeOfLongest) {
-        //             sizeOfLongest = operation;
-        //             idtOfLongest = snake.getIdt();
-        //         }
-        //     }
-        // }
-        // tuple.put(idtOfLongest,sizeOfLongest);
-        // return tuple;
+    }
+
+
+    public void stopAllSnakes() {
+        for (Snake snake : app.snakes) {
+            snake.stopSnake();
+        }
+        isRunning = false;
+    }
+
+    private void resumeGame() {
+        for (Snake snake : app.snakes) {
+            if (snake.isStopped()) {
+                snake.resumeSnake();
+            }
+        }
+        isRunning = true;
+        synchronized (lock) {
+            lock.notifyAll();
+        }
     }
 }
