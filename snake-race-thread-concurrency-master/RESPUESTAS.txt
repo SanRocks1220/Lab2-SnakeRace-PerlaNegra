@@ -22,3 +22,20 @@ Las colecciones que se pueden ver afectadas por problemas de acceso concurrente 
 Q: Uso innecesario de esperas activas.
 R:
 En la función "init()" se utiliza una espera activa para esperar a que todas las serpientes hayan terminado su juego antes de salir del bucle principal. Esto se hace mediante un bucle infinito que verifica el estado de las serpientes. Este enfoque de espera activa consume recursos de la CPU de manera innecesaria mientras espera la finalización de las serpientes. Sería más eficiente utilizar mecanismos de sincronización, como "join", para esperar a que los hilos de las serpientes finalicen en lugar de ocupar la CPU en un bucle vacío.
+
+Identifique las regiones críticas asociadas a las condiciones de carrera, y haga algo para eliminarlas. Tenga en cuenta que se debe sincronizar estríctamente LO NECESARIO. En su documento de respuestas indique, la solución realizada para cada ítem del punto 2. Igualmente tenga en cuenta que en los siguientes puntos NO se deben agregar más posibles condiciones de carrera.
+
+Para el caso del tablero, la creación e inicialización variaron de forma en que permite manejar concurrencia:
+-> static List<List<Cell>> synchronizedGameBoard = new ArrayList<>();
+Inicializando de la forma:
+-> Cell[][] gameboard = new Cell[GridSize.GRID_WIDTH][GridSize.GRID_HEIGHT];
+-> for (Cell[] fila : gameboard) {
+			List<Cell> row = new ArrayList<>();
+			for (Cell value : row) {
+				row.add(value);
+			}
+			synchronizedGameBoard.add(Collections.synchronizedList(row));
+		}
+
+Para el caso del cuerpo de la serpiente, la creación cambió igualmente para poder manejar concurrencia:
+-> private ConcurrentLinkedDeque<Cell> snakeBody = new ConcurrentLinkedDeque<Cell>();
