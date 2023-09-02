@@ -74,7 +74,7 @@ public class SnakeApp {
 
     }
     public static boolean dialogoInicial(){
-        int respuesta = JOptionPane.showConfirmDialog(frame, "¿Deseas iniciar el juego?", "Iniciar Juego", JOptionPane.YES_NO_OPTION);
+        int respuesta = JOptionPane.showConfirmDialog(frame, "Do you want to start the game?", "Start", JOptionPane.YES_NO_OPTION);
         return respuesta == JOptionPane.YES_OPTION;
     }
 
@@ -83,6 +83,8 @@ public class SnakeApp {
         app = new SnakeApp();
         if (dialogoInicial()) {
             app.init();
+        }else{
+            System.exit(0);
         }
     }
 
@@ -147,8 +149,8 @@ public class SnakeApp {
                 String deadSnake = (worstSnake<0)?"No one ends yet":Integer.toString(worstSnake+1);
                 String message = "- Largest snake: " + (largestSnake+1) + ", size: " + size + "\n"
                         + "- Worst snake: " + deadSnake;
-                Object[] options = {"Reanudar"};
-                int option = JOptionPane.showOptionDialog(frame, message, "Serpiente mas larga",
+                Object[] options = {"RESUME"};
+                int option = JOptionPane.showOptionDialog(frame, message, "Largest Snake",
                         JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
                 //int option = JOptionPane.showOptionDialog(frame,message,"Serpiente mas larga",JOptionPane.DEFAULT_OPTION,JOptionPane.INFORMATION_MESSAGE,null,new String[]{"Volver al juego"},"Back to the Game");
                 // option  0 es volver al juego
