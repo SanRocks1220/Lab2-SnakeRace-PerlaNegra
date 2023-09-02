@@ -26,10 +26,15 @@ public class Snake extends Observable implements Runnable {
     private boolean isSelected = false;
     private int growing = 0;
     public boolean goal = false;
+    private int size;
+    private boolean isRunning;
+    private Object lock;
 
-    public Snake(int idt, Cell head, int direction) {
+    public Snake(int idt, Cell head, int direction, Object lock) {
         this.idt = idt;
         this.direction = direction;
+        this.isRunning = false;
+        this.lock = lock;
         generateSnake(head);
 
     }
@@ -38,11 +43,27 @@ public class Snake extends Observable implements Runnable {
         return snakeEnd;
     }
 
+    public void setRunning(boolean state) {
+        isRunning  = state;
+    }
+
+    public void pauseThread() {
+        synchronized (lock) {
+            try {
+                lock.wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        isRunning = false;
+    }
+
     private void generateSnake(Cell head) {
         start = head;
         //Board.gameboard[head.getX()][head.getY()].reserveCell(jumps, idt);
         snakeBody.add(head);
         growing = INIT_SIZE - 1;
+        size = INIT_SIZE;
     }
 
     @Override
@@ -192,12 +213,17 @@ public class Snake extends Observable implements Runnable {
         return INIT_SIZE;
     }
 
+    public int getSize(){
+        return size;
+    }
+
     private void checkIfFood(Cell newCell) {
         Random random = new Random();
 
         if (Board.gameboard[newCell.getX()][newCell.getY()].isFood()) {
             // eat food
             growing += 3;
+            size +=3;
             int x = random.nextInt(GridSize.GRID_HEIGHT);
             int y = random.nextInt(GridSize.GRID_WIDTH);
 
