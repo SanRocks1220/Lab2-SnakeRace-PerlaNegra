@@ -1,111 +1,78 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package edu.eci.arsw.primefinder;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.Scanner;
 
-/**
- *
- */
 public class Control extends Thread {
-    
-    private final static int NTHREADS = 4;
-    private final static int MAXVALUE = 30000000;
-    private final static int TMILISECONDS = 5000;
 
-    private final int NDATA = MAXVALUE / NTHREADS;
+	private final static int NTHREADS = 3;
+	private final static int MAXVALUE = 30000000;
+	private final static int TMILISECONDS = 5000;
 
+	private final int NDATA = MAXVALUE / NTHREADS;
 
-    private PrimeFinderThread pft[];
-    
-    private Control() {
-        super();
-        this.pft = new  PrimeFinderThread[NTHREADS];
+	private PrimeFinderThread pft[];
 
-        int i;
-        for(i = 0;i < NTHREADS - 1; i++) {
-            PrimeFinderThread elem = new PrimeFinderThread(i*NDATA, (i+1)*NDATA); // 0 - 10.000.000
-            pft[i] = elem;
-        }
-        pft[i] = new PrimeFinderThread(i*NDATA, MAXVALUE + 1);
-    }
-    
-    public static Control newControl() {
-        return new Control();
-    }
+	private Control() {
+		super();
+		this.pft = new PrimeFinderThread[NTHREADS];
 
-    @Override
-    public void run() {
-        for(int i = 0;i < NTHREADS;i++ ) {
-            pft[i].start();
-        }
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-        executor.scheduleAtFixedRate(this::pauseThreads, TMILISECONDS, TMILISECONDS, TimeUnit.MILLISECONDS);
+		int i;
+		for (i = 0; i < NTHREADS - 1; i++) {
+			PrimeFinderThread elem = new PrimeFinderThread(i * NDATA, (i + 1) * NDATA);
+			pft[i] = elem;
+		}
+		pft[i] = new PrimeFinderThread(i * NDATA, MAXVALUE + 1);
+	}
 
-        ScheduledExecutorService printExecutor = Executors.newScheduledThreadPool(1);
-        printExecutor.scheduleAtFixedRate(this::printNumPrimes, TMILISECONDS, TMILISECONDS, TimeUnit.MILLISECONDS);
+	public static Control newControl() {
+		return new Control();
+	}
 
-        for (int i = 0; i < NTHREADS; i++) {
-            try {
-                pft[i].join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        executor.shutdown();
-        try {
-            executor.awaitTermination(1, TimeUnit.MINUTES);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+	public synchronized void pauseThreads() {
+		for (PrimeFinderThread thread : pft) {
+			thread.pauseThread();
+		}
+	}
 
+	public synchronized void resumeThreads() {
+		for (PrimeFinderThread thread : pft) {
+			thread.resumeThread();
+		}
+	}
 
-        /* 
-        for(int i = 0;i < NTHREADS;i++ ) {
-            try {
-                pft[i].join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        */
+	@Override
+	public void run() {
+		for (int i = 0; i < NTHREADS; i++) {
+			pft[i].start();
+		}
 
-    }
+		Scanner scanner = new Scanner(System.in);
+        int size = 0;
+        int size2 = 0;
+		while (true) {
+			try {
+				Thread.sleep(TMILISECONDS);
+				pauseThreads();
 
-    public static int getTmiliseconds() {
-        return TMILISECONDS;
-    }
-    
-    public synchronized void stopThreads(){
-        synchronized(pft){
-            for(int i = 0;i < NTHREADS;i++ ) {
-                try {
-                    pft[i].wait();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+                size = pft[0].getPrimes().size();
+                if(size != size2){
+                    System.out.println("Cantidad de Primos encontrados por los Hilos: " + size);
+                    size2 = size;
+                    System.out.println("Presiona ENTER para continuar...");
+                    scanner.nextLine();
+                    resumeThreads();
+                } else {
+                    System.out.println("No hay más primos que encontrar.");
+                    System.out.println("Total Primos: " + size);
+                    break;
                 }
-            }
-        };
-    }
+				
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 
-    private void resumeThreads() {
-        // Reanudar los threads
-        for (PrimeFinderThread thread : pft) {
-            thread.resumeThread();
-        }
-    }
-    private void pauseThreads() {
-        // Pausar los threads
-        for (PrimeFinderThread thread : pft) {
-            thread.pauseThread();
-        }
-    }
-    public void printNumPrimes(){
-        System.out.println(pft[0].getPrimes().size());
-    }
+	}
+
 }
